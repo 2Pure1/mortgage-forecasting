@@ -1,8 +1,8 @@
 data:
-  hmda_years: [2018, 2019, 2020, 2021, 2022, 2023]
-  target_geography: "Phoenix-Mesa-Chandler, AZ"  # Example MSA
+  hmda_years: [2018, 2019, 2020, 2021, 2022, 2023, 2024]
+  target_geography: "NEW ORLEANS-METAIRIE - LOUISIANA, LA"  # Example MSA
   geography_type: "msa"  # or "state"
-  geography_code: "38060"  # Phoenix MSA code
+  geography_code: "35380"  # New Orleans - Metairie MSA code
   
 model:
   test_size: 0.2
