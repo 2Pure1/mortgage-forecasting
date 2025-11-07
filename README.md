@@ -57,3 +57,9 @@ mortgage-forecasting/
 ├── README.md
 
 └── main.py
+
+
+## Quick Start
+1. Clone repository and install dependencies:
+```bash
+pip install -r requirements.txt
