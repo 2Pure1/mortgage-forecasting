@@ -21,42 +21,12 @@ Predict total dollar volume of mortgage originations for specific states or MSAs
 
 ## Project Structure
 mortgage-forecasting/
-
-├── data/
-
-│   ├── raw/               # Raw HMDA files
-
-│   ├── processed/         # Cleaned and aggregated data
-
-│   └── external/          # BEA data (optional)
-
-├── notebooks/
-
-│   ├── 01_data_wrangling.ipynb
-
-│   ├── 02_eda_analysis.ipynb
-
-│   ├── 03_model_building.ipynb
-
-│   └── 04_forecasting_evaluation.ipynb
-
-├── src/
-
-│   ├── data_processing.py
-
-│   ├── modeling.py
-
-│   └── visualization.py
-
-├── config/
-
-│   └── config.yaml
-
-├── requirements.txt
-
-├── README.md
-
-└── main.py
+├── data/ # Raw and processed data
+├── notebooks/ # Exploratory analysis Jupyter notebooks
+├── src/ # Core Python modules
+├── config/ # Configuration files
+├── outputs/ # Results and visualizations
+└── main.py # Main execution script
 
 
 ## Quick Start
