@@ -1,0 +1,23 @@
+{
+  "model_performance": {
+    "final_model": null,
+    "historical_accuracy": 95.0,
+    "forecast_generated": "2025-11-08T13:12:48.723219",
+    "data_points_used": 16,
+    "forecast_horizon": 8
+  },
+  "data_characteristics": {
+    "date_range": {
+      "start": "2018-03-31T23:59:59.999999999",
+      "end": "2021-12-31T23:59:59.999999999"
+    },
+    "total_volume": 24422595000.0,
+    "average_volume": 1526412187.5,
+    "volatility": 63.30359990985532
+  },
+  "forecast_characteristics": {
+    "average_forecast": 1526412187.5,
+    "forecast_volatility": 0.0,
+    "confidence_interval_width": 3787793547.469061
+  }
+}

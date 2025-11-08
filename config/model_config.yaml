@@ -1,0 +1,23 @@
+
+model_settings:
+  sarima:
+    order: [1, 1, 1]  # Use list instead of tuple
+    seasonal_order: [1, 1, 1, 4]
+  holtwinters:
+    trend: 'add'
+    seasonal: 'add'
+    seasonal_periods: 4
+  prophet:
+    yearly_seasonality: true
+    weekly_seasonality: false
+    daily_seasonality: false
+training:
+  test_size: 0.2
+  random_state: 42
+forecasting:
+  final_forecast_quarters: 8
+data:
+  target_geography: 'National'
+  time_column: 'date'
+  value_column: 'total_loan_volume'
+  frequency: 'quarterly'

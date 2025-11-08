@@ -1,0 +1,24 @@
+{
+  "project_title": "Regional Mortgage Origination Forecasting",
+  "geography": "National",
+  "forecast_date": "2025-11-08",
+  "key_metrics": {
+    "selected_model": null,
+    "historical_accuracy": "95.0%",
+    "forecast_horizon": "8 quarters",
+    "confidence_level": "95%",
+    "current_volume": "$205.1M",
+    "average_forecast": "$1526.4M",
+    "total_forecast_volume": "$12.21B",
+    "expected_growth": "+644.2%"
+  },
+  "forecast_period": {
+    "start": "2022-03-31",
+    "end": "2023-12-31"
+  },
+  "risk_assessment": {
+    "uncertainty_level": "High",
+    "downside_risk": "-279.2%",
+    "upside_potential": "+1567.6%"
+  }
+}
