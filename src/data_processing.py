@@ -4,7 +4,7 @@ from pathlib import Path
 import yaml
 
 class HMDAProcessor:
-    def __init__(self, config_path="config/config.yaml"):
+    def __init__(self, config_path="config/model_config.yaml"):
         with open(config_path, 'r') as file:
             self.config = yaml.safe_load(file)
         

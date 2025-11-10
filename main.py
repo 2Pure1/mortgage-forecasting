@@ -6,7 +6,7 @@ import yaml
 
 def run_analysis():
     # Load configuration
-    with open('config/config.yaml', 'r') as file:
+    with open('config/model_config.yaml', 'r') as file:
         config = yaml.safe_load(file)
     
     # Process data
