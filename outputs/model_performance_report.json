@@ -2,7 +2,7 @@
   "model_performance": {
     "final_model": null,
     "historical_accuracy": 95.0,
-    "forecast_generated": "2025-11-08T13:12:48.723219",
+    "forecast_generated": "2025-11-08T13:17:37.468591",
     "data_points_used": 16,
     "forecast_horizon": 8
   },

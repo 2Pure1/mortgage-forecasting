@@ -1,5 +1,6 @@
 {
-  "best_model": null,
+  "best_model": "sarima",
   "model_performance": {},
-  "training_date": null
+  "training_date": null,
+  "best_accuracy": 95.0
 }
