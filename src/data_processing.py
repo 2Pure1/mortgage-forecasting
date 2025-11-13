@@ -3,8 +3,13 @@ import numpy as np
 from pathlib import Path
 import yaml
 
+# Define project root relative to this file's location (src/)
+PROJECT_ROOT = Path(__file__).parent.parent
+
 class HMDAProcessor:
-    def __init__(self, config_path="config/model_config.yaml"):
+    def __init__(self, config_path=None):
+        if config_path is None:
+            config_path = PROJECT_ROOT / "config" / "model_config.yaml"
         with open(config_path, 'r') as file:
             self.config = yaml.safe_load(file)
         
@@ -12,17 +17,18 @@ class HMDAProcessor:
         """Load and combine HMDA data for multiple years"""
         if years is None:
             years = self.config['data']['hmda_years']
-            
+        
+        geography_code = self.config['data']['geography_code']
         all_data = []
         for year in years:
-            file_path = Path(f"data/raw/hmda_{year}.csv")
+            file_path = PROJECT_ROOT / "data" / "raw" / f"{year}_msamd_{geography_code}.csv"
             if file_path.exists():
                 print(f"Loading data for {year}...")
                 df = pd.read_csv(file_path, low_memory=False)
                 # Select relevant columns
                 cols = ['loan_amount', 'action_taken', 'state_code', 'county_code', 
-                       'census_tract', 'msa_md', 'applicant_income_000s', 'loan_purpose',
-                       'property_type', 'loan_type', 'as_of_year']
+                       'census_tract', 'derived_msa-md', 'applicant_income_000s', 'loan_purpose',
+                       'property_type', 'loan_type', 'activity_year']
                 
                 # Only keep available columns
                 available_cols = [col for col in cols if col in df.columns]
@@ -31,6 +37,10 @@ class HMDAProcessor:
             else:
                 print(f"Warning: Data file not found for year {year} at {file_path}. Skipping.")
                 
+        if not all_data:
+            print("\nError: No HMDA data files were found or loaded. Please ensure the raw CSV files")
+            print(f"for years {years} exist in the 'data/raw/' directory.")
+            return pd.DataFrame() # Return empty DataFrame
         return pd.concat(all_data, ignore_index=True)
     
     def filter_originations(self, df):
@@ -40,9 +50,9 @@ class HMDAProcessor:
     def aggregate_quarterly_volume(self, df, geography_type='msa'):
         """Aggregate loan volume by quarter for target geography"""
         # Filter for target geography
-        geo_code = self.config['data']['geography_code']
+        geo_code = int(self.config['data']['geography_code'])
         if geography_type == 'msa':
-            df_geo = df[df['msa_md'] == geo_code]
+            df_geo = df[df['derived_msa-md'] == geo_code]
         elif geography_type == 'state':
             df_geo = df[df['state_code'] == geo_code]
 
@@ -51,11 +61,11 @@ class HMDAProcessor:
 
         # Since HMDA data is annual, we'll distribute the annual volume evenly across 4 quarters.
         # This provides a more realistic baseline than assigning all volume to Q4.
-        annual_volume = df_geo.groupby('as_of_year')['loan_amount'].sum().reset_index()
+        annual_volume = df_geo.groupby('activity_year')['loan_amount'].sum().reset_index()
         
         quarterly_data = []
         for _, row in annual_volume.iterrows():
-            year = row['as_of_year']
+            year = int(row['activity_year'])
             quarterly_volume_amount = row['loan_amount'] / 4
             for q in range(1, 5):
                 quarter_end_month = q * 3
@@ -87,17 +97,27 @@ def main():
     print("Loading HMDA data...")
     hmda_data = processor.load_hmda_data()
     
+    if hmda_data.empty:
+        print("Stopping execution due to missing data.")
+        return None # Stop processing
+
     print("Filtering for originated loans...")
     originated_loans = processor.filter_originations(hmda_data)
     
     print("Aggregating quarterly volume...")
     quarterly_volume = processor.aggregate_quarterly_volume(originated_loans)
     
+    # Stop if no data was found for the specified geography
+    if quarterly_volume.empty:
+        geo_code = processor.config['data']['geography_code']
+        print(f"\nError: No data found for the specified geography code: {geo_code}. Stopping processing.")
+        return None
+
     print("Creating time series...")
     final_series = processor.create_time_series(quarterly_volume)
     
     # Save processed data
-    output_path = Path("data/processed/quarterly_mortgage_volume.csv")
+    output_path = PROJECT_ROOT / "data" / "processed" / "quarterly_mortgage_volume.csv"
     output_path.parent.mkdir(parents=True, exist_ok=True)
     final_series.to_csv(output_path, index=False)
     

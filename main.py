@@ -3,10 +3,15 @@ from src.data_processing import HMDAProcessor, main as process_data
 from src.modeling import MortgageForecaster
 from src.visualization import MortgageVisualizer
 import yaml
+from pathlib import Path
+
+# Define project root
+PROJECT_ROOT = Path(__file__).parent
 
 def run_analysis():
     # Load configuration
-    with open('config/model_config.yaml', 'r') as file:
+    config_path = PROJECT_ROOT / 'config' / 'model_config.yaml'
+    with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
     
     # Process data
@@ -14,13 +19,18 @@ def run_analysis():
     print("Step 1: Data Processing")
     quarterly_data = process_data()
     
+    # Stop if data processing failed (e.g., no raw data found)
+    if quarterly_data is None:
+        print("\nAnalysis stopped because no data was processed. Please check for raw data files.")
+        return
+
     # Initialize visualizer
     viz = MortgageVisualizer(config)
     
     # Exploratory plots
     print("\nStep 2: Exploratory Analysis")
     fig_ts, ax_ts = viz.plot_time_series(quarterly_data)
-    fig_ts.savefig('outputs/time_series_plot.png', dpi=300, bbox_inches='tight')
+    fig_ts.savefig(PROJECT_ROOT / 'outputs/time_series_plot.png', dpi=300, bbox_inches='tight')
     
     # Modeling
     print("\nStep 3: Model Building")
@@ -31,6 +41,7 @@ def run_analysis():
     forecaster.fit_sarima()
     forecaster.fit_prophet()
     forecaster.fit_ets()
+    forecaster.fit_xgboost()
     
     # Generate forecasts
     horizon = config['model']['forecast_horizon']
@@ -46,11 +57,11 @@ def run_analysis():
     fig_comp, ax_comp = viz.plot_forecast_comparison(
         forecaster.train, forecaster.test, forecasts, forecaster.models
     )
-    fig_comp.savefig('outputs/forecast_comparison.png', dpi=300, bbox_inches='tight')
+    fig_comp.savefig(PROJECT_ROOT / 'outputs/forecast_comparison.png', dpi=300, bbox_inches='tight')
     
     # Final forecast
     print("\nStep 5: Final Forecast")
-    final_forecast, best_model = forecaster.final_forecast(
+    final_forecast, evaluation, best_model = forecaster.final_forecast(
         periods=config['forecasting']['final_forecast_quarters']
     )
     
@@ -58,11 +69,11 @@ def run_analysis():
     fig_final, ax_final = viz.plot_final_forecast(
         forecaster.data, final_forecast, best_model
     )
-    fig_final.savefig('outputs/final_forecast.png', dpi=300, bbox_inches='tight')
+    fig_final.savefig(PROJECT_ROOT / 'outputs/final_forecast.png', dpi=300, bbox_inches='tight')
     
     # Save results
-    final_forecast.to_csv('outputs/final_forecast_results.csv', index=False)
-    evaluation.to_csv('outputs/model_evaluation.csv')
+    final_forecast.to_csv(PROJECT_ROOT / 'outputs/final_forecast_results.csv', index=False)
+    evaluation.to_csv(PROJECT_ROOT / 'outputs/model_evaluation.csv')
     
     print(f"\n=== Analysis Complete ===")
     print(f"Best model: {best_model}")

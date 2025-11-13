@@ -1,0 +1,12 @@
+data:
+  geography_code: '35380'
+  geography_type: msa
+  hmda_years:
+  - 2018
+  - 2019
+  - 2020
+  - 2021
+  - 2022
+  - 2023
+  - 2024
+  target_geography: New Orleans-Metairie, Louisiana

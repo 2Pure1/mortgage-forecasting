@@ -46,13 +46,13 @@ class MortgageVisualizer:
                 label='Test Data', linewidth=2, color='blue')
         
         # Plot forecasts
-        colors = ['red', 'green', 'orange']
+        colors = ['red', 'green', 'orange', 'purple']
         for i, (model_name, forecast) in enumerate(forecasts.items()):
+            forecast = forecast[:len(test)]
             forecast_dates = test.index[:len(forecast)]
             ax.plot(forecast_dates, forecast, 
                    label=f'{model_name.upper()} Forecast', 
                    linewidth=2, linestyle='--', color=colors[i])
-        
         ax.set_title(f'Model Forecast Comparison\n{self.config["data"]["target_geography"]}', 
                     fontsize=14, fontweight='bold')
         ax.set_xlabel('Date')

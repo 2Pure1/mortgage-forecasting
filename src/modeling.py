@@ -5,6 +5,7 @@ from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from pmdarima import auto_arima
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+import xgboost as xgb
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -30,6 +31,12 @@ class MortgageForecaster:
         """Fit SARIMA model using auto_arima"""
         print("Fitting SARIMA model...")
         
+        # Check if there's enough data for auto_arima to run
+        if len(self.train['total_loan_volume']) < 10: # A reasonable minimum for seasonal ARIMA
+            print("Warning: Not enough training data to fit a SARIMA model. Skipping.")
+            self.models['sarima'] = None # Explicitly set to None
+            return None
+
         # Auto-select best SARIMA parameters
         model = auto_arima(
             self.train['total_loan_volume'],
@@ -78,6 +85,42 @@ class MortgageForecaster:
         self.models['ets'] = model
         
         return model
+
+    def _create_features(self, df, label=None):
+        """
+        Creates time series features from datetime index
+        """
+        df = df.copy()
+        df['quarter'] = df.index.quarter
+        df['year'] = df.index.year
+        X = df[['quarter', 'year']]
+        if label:
+            y = df[label]
+            return X, y
+        return X
+
+    def fit_xgboost(self):
+        """Fit XGBoost model"""
+        print("Fitting XGBoost model...")
+
+        X_train, y_train = self._create_features(self.train, label='total_loan_volume')
+
+        model = xgb.XGBRegressor(
+            objective='reg:squarederror',
+            n_estimators=1000,
+            learning_rate=0.05,
+            max_depth=5,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42
+        )
+
+        model.fit(X_train, y_train,
+                  eval_set=[(X_train, y_train)],
+                  verbose=False)
+
+        self.models['xgboost'] = model
+        return model
     
     def generate_forecasts(self, horizon=6):
         """Generate forecasts for all models"""
@@ -85,6 +128,7 @@ class MortgageForecaster:
         
         # SARIMA forecast
         if 'sarima' in self.models:
+            if self.models['sarima'] is None: return self.forecasts
             sarima_forecast = self.models['sarima'].predict(n_periods=horizon)
             self.forecasts['sarima'] = sarima_forecast
         
@@ -99,6 +143,14 @@ class MortgageForecaster:
             ets_forecast = self.models['ets'].forecast(horizon)
             self.forecasts['ets'] = ets_forecast
             
+        # XGBoost forecast
+        if 'xgboost' in self.models:
+            future_dates = pd.date_range(start=self.test.index.min(), periods=horizon, freq='Q')
+            future_df = pd.DataFrame(index=future_dates)
+            X_future = self._create_features(future_df)
+            xgboost_forecast = self.models['xgboost'].predict(X_future)
+            self.forecasts['xgboost'] = xgboost_forecast
+
         return self.forecasts
     
     def evaluate_models(self):
@@ -106,8 +158,11 @@ class MortgageForecaster:
         results = {}
         
         for model_name, forecast in self.forecasts.items():
+            if forecast is None: continue
+
             # Align forecast with test data
-            test_values = self.test['total_loan_volume'].values[:len(forecast)]
+            test_values = self.test['total_loan_volume'].values
+            forecast = forecast[:len(test_values)]
             
             mae = mean_absolute_error(test_values, forecast)
             rmse = np.sqrt(mean_squared_error(test_values, forecast))
@@ -125,6 +180,10 @@ class MortgageForecaster:
     def final_forecast(self, periods=8):
         """Generate final forecast using best model"""
         # Find best model based on MAPE
+        if not self.models or all(v is None for v in self.models.values()):
+            print("Error: No models were successfully trained. Cannot generate a final forecast.")
+            return None, None, None
+
         evaluation = self.evaluate_models()
         best_model_name = evaluation['Accuracy'].idxmax()
         best_model = self.models[best_model_name]
@@ -152,6 +211,16 @@ class MortgageForecaster:
             future = best_model.make_future_dataframe(periods=periods, freq='Q')
             forecast_df = best_model.predict(future)
             final_forecast = forecast_df.tail(periods)['yhat']
+
+        elif best_model_name == 'xgboost':
+            X_all, y_all = self._create_features(self.data, label='total_loan_volume')
+            best_model.fit(X_all, y_all)
+            
+            last_date = self.data.index.max()
+            future_dates = pd.date_range(start=last_date + pd.DateOffset(months=3), periods=periods, freq='Q')
+            future_df = pd.DataFrame(index=future_dates)
+            X_future = self._create_features(future_df)
+            final_forecast = best_model.predict(X_future)
             
         else:  # ETS
             final_model = ExponentialSmoothing(

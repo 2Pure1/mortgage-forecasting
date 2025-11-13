@@ -8,3 +8,4 @@ prophet>=1.1.0
 scikit-learn>=1.0.0
 pyyaml>=6.0
 jupyter>=1.0.0
+xgboost
