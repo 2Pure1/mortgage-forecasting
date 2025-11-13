@@ -176,4 +176,4 @@ class MortgageForecaster:
             'model': best_model_name
         })
         
-        return forecast_df, best_model_name
+        return forecast_df, evaluation, best_model_name

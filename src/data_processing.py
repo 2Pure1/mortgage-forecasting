@@ -36,9 +36,10 @@ class HMDAProcessor:
     
     def aggregate_quarterly_volume(self, df, geography_type='msa'):
         """Aggregate loan volume by quarter for target geography"""
-        # Convert to datetime (approximate quarter from year)
-        df['quarter'] = pd.to_datetime(df['as_of_year'].astype(str) + 
-                                     pd.Series(['-03-31', '-06-30', '-09-30', '-12-31'] * len(df)).sample(n=len(df), replace=True).values)
+        # Since HMDA data is annual, we'll aggregate by year and assign to Q4.
+        # This avoids randomly assigning quarters which is not reproducible.
+        df_agg = df.groupby('as_of_year')['loan_amount'].sum().reset_index()
+        df_agg['quarter'] = pd.to_datetime(df_agg['as_of_year'].astype(str) + '-12-31')
         
         # Filter for target geography
         geo_code = self.config['data']['geography_code']
@@ -48,7 +49,7 @@ class HMDAProcessor:
             df_geo = df[df['state_code'] == geo_code]
             
         # Aggregate by quarter
-        quarterly_volume = df_geo.groupby('quarter')['loan_amount'].sum().reset_index()
+        quarterly_volume = df_geo.groupby('quarter')['loan_amount'].sum().reset_index() if not df_geo.empty else pd.DataFrame(columns=['quarter', 'loan_amount'])
         quarterly_volume.columns = ['date', 'total_loan_volume']
         quarterly_volume = quarterly_volume.sort_values('date')
         
