@@ -44,7 +44,7 @@ class HMDAProcessor:
         geo_code = self.config['data']['geography_code']
         if geography_type == 'msa':
             df_geo = df[df['msa_md'] == geo_code]
-        else:  # state
+        elif geography_type == 'state':
             df_geo = df[df['state_code'] == geo_code]
             
         # Aggregate by quarter
