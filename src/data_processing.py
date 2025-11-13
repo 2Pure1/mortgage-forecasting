@@ -17,6 +17,7 @@ class HMDAProcessor:
         for year in years:
             file_path = Path(f"data/raw/hmda_{year}.csv")
             if file_path.exists():
+                print(f"Loading data for {year}...")
                 df = pd.read_csv(file_path, low_memory=False)
                 # Select relevant columns
                 cols = ['loan_amount', 'action_taken', 'state_code', 'county_code', 
@@ -27,6 +28,8 @@ class HMDAProcessor:
                 available_cols = [col for col in cols if col in df.columns]
                 df = df[available_cols]
                 all_data.append(df)
+            else:
+                print(f"Warning: Data file not found for year {year} at {file_path}. Skipping.")
                 
         return pd.concat(all_data, ignore_index=True)
     
@@ -36,23 +39,32 @@ class HMDAProcessor:
     
     def aggregate_quarterly_volume(self, df, geography_type='msa'):
         """Aggregate loan volume by quarter for target geography"""
-        # Since HMDA data is annual, we'll aggregate by year and assign to Q4.
-        # This avoids randomly assigning quarters which is not reproducible.
-        df_agg = df.groupby('as_of_year')['loan_amount'].sum().reset_index()
-        df_agg['quarter'] = pd.to_datetime(df_agg['as_of_year'].astype(str) + '-12-31')
-        
         # Filter for target geography
         geo_code = self.config['data']['geography_code']
         if geography_type == 'msa':
             df_geo = df[df['msa_md'] == geo_code]
         elif geography_type == 'state':
             df_geo = df[df['state_code'] == geo_code]
-            
-        # Aggregate by quarter
-        quarterly_volume = df_geo.groupby('quarter')['loan_amount'].sum().reset_index() if not df_geo.empty else pd.DataFrame(columns=['quarter', 'loan_amount'])
+
+        if df_geo.empty:
+            return pd.DataFrame(columns=['date', 'total_loan_volume'])
+
+        # Since HMDA data is annual, we'll distribute the annual volume evenly across 4 quarters.
+        # This provides a more realistic baseline than assigning all volume to Q4.
+        annual_volume = df_geo.groupby('as_of_year')['loan_amount'].sum().reset_index()
+        
+        quarterly_data = []
+        for _, row in annual_volume.iterrows():
+            year = row['as_of_year']
+            quarterly_volume_amount = row['loan_amount'] / 4
+            for q in range(1, 5):
+                quarter_end_month = q * 3
+                date = pd.to_datetime(f'{year}-{quarter_end_month}-01') + pd.offsets.QuarterEnd(0)
+                quarterly_data.append({'date': date, 'total_loan_volume': quarterly_volume_amount})
+
+        quarterly_volume = pd.DataFrame(quarterly_data)
         quarterly_volume.columns = ['date', 'total_loan_volume']
         quarterly_volume = quarterly_volume.sort_values('date')
-        
         return quarterly_volume
     
     def create_time_series(self, df):

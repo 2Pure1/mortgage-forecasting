@@ -1,5 +1,5 @@
 data:
-  hmda_years: [2018, 2019, 2020, 2021, 2022, 2023, 2024]
+  hmda_years: [2018, 2019, 2020, 2021, 2022]
   target_geography: "NEW ORLEANS-METAIRIE - LOUISIANA, LA"
   geography_type: "msa"  # or "state"
   geography_code: "35380"
