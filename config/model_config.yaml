@@ -1,21 +1,23 @@
-data:
-  hmda_years: [2018, 2019, 2020, 2021, 2022, 2023, 2024]
-  target_geography: "NEW ORLEANS-METAIRIE - LOUISIANA, LA"
-  geography_type: "msa"  # or "state"
-  geography_code: "35380"
-  time_column: 'date'
-  value_column: 'total_loan_volume'
-  frequency: 'quarterly'
 
-model:
-  test_size: 0.2
-  forecast_horizon: 6  # quarters
-  models: ["sarima", "prophet", "ets"]
-
-forecasting:
-  confidence_level: 0.95
-  final_forecast_quarters: 8
-
+model_settings:
+  sarima:
+    order: [1, 1, 1]  # Use list instead of tuple
+    seasonal_order: [1, 1, 1, 4]
+  holtwinters:
+    trend: 'add'
+    seasonal: 'add'
+    seasonal_periods: 4
+  prophet:
+    yearly_seasonality: true
+    weekly_seasonality: false
+    daily_seasonality: false
 training:
   test_size: 0.2
   random_state: 42
+forecasting:
+  final_forecast_quarters: 8
+data:
+  target_geography: 'National'
+  time_column: 'date'
+  value_column: 'total_loan_volume'
+  frequency: 'quarterly'
